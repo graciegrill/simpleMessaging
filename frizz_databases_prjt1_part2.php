@@ -1,7 +1,12 @@
 <?php
     include 'connection.php';
 	if (isset($_SESSION['loggedInUser'])) {
-        $stmt1 = $conn->prepare("SELECT DISTINCT sender.myName AS SenderName, receiver.myName AS ReceiverName, m.timeSent, m.message
+        $stmt1 = $conn->prepare("SELECT DISTINCT sender.myName AS SenderName, sender.userName AS senderUserName, receiver.myName AS ReceiverName, receiver.userName as receiverUserName, m.message, m.timeSent, 
+        CASE
+            WHEN DATEDIFF(CURDATE(), m.timeSent) <1 THEN CONCAT(DATE_FORMAT(m.timeSent, '%h:%i %p'))
+            WHEN DATEDIFF(CURDATE(), m.timeSent) <=365 AND DATEDIFF(CURDATE(), m.timeSent) >=1 THEN CONCAT(DATE_FORMAT(m.timeSent, '%M-%d'))
+            ELSE CONCAT(DATE_FORMAT(m.timeSent, '%M %d %Y')) 
+            END AS theTime
 		FROM messages m
 		JOIN users sender ON m.sendID = sender.ID
 		JOIN users receiver ON m.receiveID = receiver.ID
@@ -12,16 +17,19 @@
         $result = $stmt1->get_result();
         if ($result->num_rows > 0) 
 		while($row = $result->fetch_assoc()) 
-			echo "Sender: " . $row["SenderName"]."<br>Recipient: ".$row["ReceiverName"]."<br>Message: ".$row["message"]."<br>";
+			echo "Sender: " . $row["SenderName"]."  (".$row["senderUserName"].")<br>Recipient: ".$row["ReceiverName"]."  (".$row["receiverUserName"].")<br>Message: ".$row["message"]."<br>Time sent: ".$row["theTime"]."<br>";
 	    else 
 		    echo "No results";
+    }
 
-		
+	if(isset($_SESSION['loggedInUser']) && $_SERVER['REQUEST_METHOD'] == 'POST'){
 		$stmt = $conn->prepare("INSERT INTO messages (sendID, receiveID, message) VALUES((SELECT ID FROM users WHERE userName = ? ),(SELECT ID FROM users WHERE userName =?), ?);
 		");
 		$stmt->bind_param("sss", $_SESSION['loggedInUser'], $_POST["receiverUserName"], $_POST["message"]);
 		$stmt->execute();
-	}
+        header("Location: " . $_SERVER['PHP_SELF']);
+        exit();
+        }
 	?>
     <html>
 	<head>
