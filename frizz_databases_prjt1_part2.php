@@ -1,5 +1,7 @@
 <?php
+    //use the connection I made earlier
     include 'connection.php';
+    //Always display messages
 	if (isset($_SESSION['loggedInUser'])) {
         $stmt1 = $conn->prepare("SELECT DISTINCT sender.myName AS SenderName, sender.userName AS senderUserName, receiver.myName AS ReceiverName, receiver.userName as receiverUserName, m.message, m.timeSent, 
         CASE
@@ -21,7 +23,7 @@
 	    else 
 		    echo "No results";
     }
-
+    //if the method is post, I submit the information, otherwise redirect to same page --> prevents resubmission on refresh
 	if(isset($_SESSION['loggedInUser']) && $_SERVER['REQUEST_METHOD'] == 'POST'){
 		$stmt = $conn->prepare("INSERT INTO messages (sendID, receiveID, message) VALUES((SELECT ID FROM users WHERE userName = ? ),(SELECT ID FROM users WHERE userName =?), ?);
 		");
