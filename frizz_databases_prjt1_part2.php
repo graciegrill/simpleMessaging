@@ -3,6 +3,7 @@
     include 'connection.php';
     //Always display messages
 	if (isset($_SESSION['loggedInUser'])) {
+        //display messages select statement
         $stmt1 = $conn->prepare("SELECT DISTINCT sender.myName AS SenderName, sender.userName AS senderUserName, receiver.myName AS ReceiverName, receiver.userName as receiverUserName, m.message, m.timeSent, 
         CASE
             WHEN DATEDIFF(CURDATE(), m.timeSent) <1 THEN CONCAT(DATE_FORMAT(m.timeSent, '%h:%i %p'))
@@ -14,9 +15,12 @@
 		JOIN users receiver ON m.receiveID = receiver.ID
 		WHERE sender.userName = ? OR receiver.userName = ?
 		ORDER BY m.timeSent");
+        //bind parameters --> same one twice
 		$stmt1->bind_param("ss",$_SESSION['loggedInUser'],$_SESSION['loggedInUser']);
+        //execute the query
 		$stmt1->execute();
         $result = $stmt1->get_result();
+        //display the results
         if ($result->num_rows > 0) 
 		while($row = $result->fetch_assoc()) 
 			echo "Sender: " . $row["SenderName"]."  (".$row["senderUserName"].")<br>Recipient: ".$row["ReceiverName"]."  (".$row["receiverUserName"].")<br>Message: ".$row["message"]."<br>Time sent: ".$row["theTime"]."<br>";
@@ -25,10 +29,13 @@
     }
     //if the method is post, I submit the information, otherwise redirect to same page --> prevents resubmission on refresh
 	if(isset($_SESSION['loggedInUser']) && $_SERVER['REQUEST_METHOD'] == 'POST'){
+        //sql query for inserting a message
 		$stmt = $conn->prepare("INSERT INTO messages (sendID, receiveID, message) VALUES((SELECT ID FROM users WHERE userName = ? ),(SELECT ID FROM users WHERE userName =?), ?);
 		");
+        //bind the parameters-->uses session variable established earlier
 		$stmt->bind_param("sss", $_SESSION['loggedInUser'], $_POST["receiverUserName"], $_POST["message"]);
 		$stmt->execute();
+        //redirect to itself
         header("Location: " . $_SERVER['PHP_SELF']);
         exit();
         }
